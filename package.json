@@ -1,0 +1,13 @@
+{
+  "name": "where-should-we-go-hang",
+  "version": "0.0.1",
+  "description": "Figure out where to go hang out with your friends based on your location and theirs.",
+  "main": "index.js",
+  "scripts": {
+  },
+  "author": "Ahnaf Prio",
+  "devDependencies": {
+  },
+  "dependencies": {
+  }
+}
