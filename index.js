@@ -96,13 +96,7 @@ const retrieveRestaurantsAndBars = async (addresses) => {
     return { restaurants, bars };
 };
 
-const addresses = [
-    '1000 Nicollet Mall Minneapolis MN 55403',
-    '350 South 5th Street Minneapolis MN 55402',
-    '3001 Hennepin Avenue Minneapolis MN 55408',
-    '1600 Grand Avenue Saint Paul MN 55105',
-    '205 East Hennepin Avenue Minneapolis MN 55414',
-]
+const { addresses } = require('./config.json');
 
 retrieveRestaurantsAndBars(addresses).then(results => {
     // Extracting restaurant and bar names from the results
