@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <title>🍽️ Where should we go hang?🍸?</title>
+        <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: blue;
+            color: #333;
+            text-align: center;
+        }
+
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        input[type="text"] {
+            margin: 10px 0;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #ff4757;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #eccc68;
+        }
+    </style>
+    </head>
+
+    <body>
+        <div class="container">
+            <h1>🍽️ Where should we go hang?🍸</h1>
+            <div id="address-inputs">
+                <input type="text" placeholder="Enter an address...">
+            </div>
+            <button id="add-address">Add Another Address 📍</button>
+            <button id="find-places">Find Places 🌟</button>
+            <div id="results">
+                <!-- Results will be displayed here -->
+            </div>
+        </div>
+        <script>
+
+        const calculateGeographicalCenter = (nodes) => {
+            console.log('Calculating geographical center...');
+            // console.log('Nodes:', nodes);
+            const latitudesSum = nodes.reduce((acc, node) => acc + node.lat, 0);
+            const longitudesSum = nodes.reduce((acc, node) => acc + node.lng, 0);
+            return { latitude: latitudesSum / nodes.length, longitude: longitudesSum / nodes.length };
+        };
+
+        const getLatitudeLongitude = async (address) => {
+            const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=AIzaSyA_mmI-elWh_pASDm9bTxAzbP4jsqEMc_g`;
+
+            try {
+                const response = await fetch(geocodeUrl);
+                const data = await response.json();
+                if (data.status === 'OK') {
+                    const location = data.results[0].geometry.location;
+                    // console.log('Address:', address);
+                    // console.log('Latitude:', location.lat);
+                    // console.log('Longitude:', location.lng);
+                    return location;
+                } else {
+                    console.error('Geocoding failed:', data.status);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        };
+
+        const findNearbyPlaces = async (center, type) => {
+            const radius = '500'; // Search within 500 meters
+            const placesUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${center.latitude},${center.longitude}&radius=${radius}&type=${type}&key=AIzaSyA_mmI-elWh_pASDm9bTxAzbP4jsqEMc_g`;
+            console.log('Searching for nearby places...');
+            console.log('Center:', center);
+            console.log('Type:', type);
+            try {
+                const response = await fetch(placesUrl);
+                const data = await response.json();
+                // console.log(data);
+                if (data.status === 'OK') {
+                    return data.results;
+                } else {
+                    console.error('Places search failed:', data.status);
+                }
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        };
+        const retrieveRestaurantsAndBars = async (addresses) => {
+            // Geocode all addresses to get their coordinates
+            const coords = await Promise.all(addresses.map(address => getLatitudeLongitude(address)));
+
+            // Calculate the geographical center of all coordinates
+            const center = calculateGeographicalCenter(coords);
+
+            // Find nearby restaurants and bars
+            const restaurants = await findNearbyPlaces(center, 'restaurant');
+            const bars = await findNearbyPlaces(center, 'bar');
+
+            return { restaurants, bars };
+        };
+
+       document.getElementById('add-address').addEventListener('click', function () {
+                var newInput = document.createElement('input');
+                newInput.type = 'text';
+                newInput.placeholder = 'Enter another address...';
+                document.getElementById('address-inputs').appendChild(newInput);
+            });
+
+            document.getElementById('find-places').addEventListener('click', async function () {
+                const inputs = document.querySelectorAll('#address-inputs input');
+                const addresses = Array.from(inputs).map(input => input.value);
+                const results = await retrieveRestaurantsAndBars(addresses);
+
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = '<h2>Results</h2>';
+
+                if (results.restaurants && results.restaurants.length > 0) {
+                    resultsDiv.innerHTML += '<h3>Restaurants</h3><ul>';
+                    results.restaurants.forEach(place => {
+                        resultsDiv.innerHTML += `<li>${place.name}</li>`;
+                    });
+                    resultsDiv.innerHTML += '</ul>';
+                }
+
+                if (results.bars && results.bars.length > 0) {
+                    resultsDiv.innerHTML += '<h3>Bars</h3><ul>';
+                    results.bars.forEach(bar => {
+                        resultsDiv.innerHTML += `<li>${bar.name}</li>`;
+                    });
+                    resultsDiv.innerHTML += '</ul>';
+                }
+            });
+        </script>
+    </body>
+</html>
