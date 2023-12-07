@@ -8,9 +8,11 @@
  * and `longitude`, which represent the calculated geographical center based on the input `nodes`.
  */
 const calculateGeographicalCenter = (nodes) => {
-    const latSum = nodes.reduce((acc, node) => acc + node.latitude, 0);
-    const lngSum = nodes.reduce((acc, node) => acc + node.longitude, 0);
-    return { latitude: latSum / nodes.length, longitude: lngSum / nodes.length };
+    console.log('Calculating geographical center...');
+    // console.log('Nodes:', nodes);
+    const latitudesSum = nodes.reduce((acc, node) => acc + node.lat, 0);
+    const longitudesSum = nodes.reduce((acc, node) => acc + node.lng, 0);
+    return { latitude: latitudesSum / nodes.length, longitude: longitudesSum / nodes.length };
 };
 
 /**
@@ -19,21 +21,19 @@ const calculateGeographicalCenter = (nodes) => {
  * @param address - The `address` parameter is a string that represents the address for which you want
  * to retrieve the latitude and longitude coordinates. It should be a valid address that can be
  * geocoded by the Google Maps Geocoding API.
- * @param apiKey - The `apiKey` parameter is the API key that is required to access the Google Maps
- * Geocoding API. This key is used to authenticate and authorize your requests to the API. You can
- * obtain an API key by creating a project in the Google Cloud Console and enabling the Geocoding API
- * for that project.
  */
-const getLatitudeLongitude = async (address, apiKey) => {
-    const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
-    
+const getLatitudeLongitude = async (address) => {
+    const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=AIzaSyA_mmI-elWh_pASDm9bTxAzbP4jsqEMc_g`;
+
     try {
         const response = await fetch(geocodeUrl);
         const data = await response.json();
         if (data.status === 'OK') {
             const location = data.results[0].geometry.location;
-            console.log('Latitude:', location.lat);
-            console.log('Longitude:', location.lng);
+            // console.log('Address:', address);
+            // console.log('Latitude:', location.lat);
+            // console.log('Longitude:', location.lng);
+            return location;
         } else {
             console.error('Geocoding failed:', data.status);
         }
@@ -52,35 +52,75 @@ const getLatitudeLongitude = async (address, apiKey) => {
  * @param type - The "type" parameter in the "findNearbyPlaces" function is used to specify the type of
  * places you want to search for. It can be any valid place type supported by the Google Places API,
  * such as "restaurant", "cafe", "park", etc.
- * @param apiKey - The `apiKey` parameter is the API key that you obtain from the Google Cloud Platform
- * Console. This key is required to authenticate your requests to the Google Places API.
  */
-const findNearbyPlaces = async (center, type, apiKey) => {
+const findNearbyPlaces = async (center, type) => {
     const radius = '500'; // Search within 500 meters
-    const placesUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${center.latitude},${center.longitude}&radius=${radius}&type=${type}&key=${apiKey}`;
-
+    const placesUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${center.latitude},${center.longitude}&radius=${radius}&type=${type}&key=AIzaSyA_mmI-elWh_pASDm9bTxAzbP4jsqEMc_g`;
+    console.log('Searching for nearby places...');
+    console.log('Center:', center);
+    console.log('Type:', type);
     try {
         const response = await fetch(placesUrl);
         const data = await response.json();
-        console.log(data);
+        // console.log(data);
+        if (data.status === 'OK') {
+            return data.results;
+        } else {
+            console.error('Places search failed:', data.status);
+        }
     } catch (err) {
         console.error('Error:', err);
     }
 };
 
-const nodes = [
-    { latitude: 40.7128, longitude: -74.0060 }, 
-    { latitude: 34.0522, longitude: -118.2437 }, 
-];
-const center = calculateGeographicalCenter(nodes);
-const apiKey = 'YOUR_GOOGLE_API_KEY'; 
 
-getLatitudeLongitude('902 Grand Avenue', apiKey);
-findNearbyPlaces(center, 'restaurant', apiKey);
-findNearbyPlaces(center, 'bar', apiKey);
+/**
+ * The function retrieves the coordinates of given addresses, calculates the geographical center, and
+ * finds nearby restaurants and bars.
+ * @param addresses - An array of addresses for which you want to retrieve nearby restaurants and bars.
+ * @returns The function `retrieveRestaurantsAndBars` returns an object with two properties:
+ * `restaurants` and `bars`. The `restaurants` property contains the nearby restaurants, and the `bars`
+ * property contains the nearby bars.
+ */
+const retrieveRestaurantsAndBars = async (addresses) => {
+    // Geocode all addresses to get their coordinates
+    const coords = await Promise.all(addresses.map(address => getLatitudeLongitude(address)));
+
+    // Calculate the geographical center of all coordinates
+    const center = calculateGeographicalCenter(coords);
+
+    // Find nearby restaurants and bars
+    const restaurants = await findNearbyPlaces(center, 'restaurant');
+    const bars = await findNearbyPlaces(center, 'bar');
+
+    return { restaurants, bars };
+};
+
+const addresses = [
+    '1000 Nicollet Mall Minneapolis MN 55403',
+    '350 South 5th Street Minneapolis MN 55402',
+    '3001 Hennepin Avenue Minneapolis MN 55408',
+    '1600 Grand Avenue Saint Paul MN 55105',
+    '205 East Hennepin Avenue Minneapolis MN 55414',
+]
+
+retrieveRestaurantsAndBars(addresses).then(results => {
+    // Extracting restaurant and bar names from the results
+    const restaurantNames = results.restaurants.map(place => place.name);
+    const barNames = results.bars.map(place => place.name);
+    
+    // If one is both a bar and restaurant 
+    const both = restaurantNames.filter(name => barNames.includes(name));
+
+    console.log('Restaurant and Bar:', both);
+    console.log('Restaurants:', restaurantNames);
+    console.log('Bars:', barNames);
+});
+
 
 module.exports = {
     calculateGeographicalCenter,
     getLatitudeLongitude,
-    findNearbyPlaces
+    findNearbyPlaces,
+    retrieveRestaurantsAndBars
 };
