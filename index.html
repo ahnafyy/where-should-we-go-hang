@@ -6,23 +6,39 @@
         <style>
         body {
             font-family: 'Courier New', Courier, monospace;
-            background-color: blue;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+            height: 100vh;
             color: #333;
             text-align: center;
         }
 
-        .container {
-            width: 80%;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
         }
 
         input[type="text"] {
-            margin: 10px 0;
+            margin: 10px 10px;
             padding: 10px;
             font-size: 16px;
+        }
+
+        container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         button {
@@ -36,7 +52,7 @@
         }
 
         button:hover {
-            background-color: #eccc68;
+            background-color: #23d5ab;
         }
     </style>
     </head>
@@ -55,46 +71,13 @@
         </div>
         <script>
 
-        const calculateGeographicalCenter = (nodes) => {
-            console.log('Calculating geographical center...');
-            // console.log('Nodes:', nodes);
-            const latitudesSum = nodes.reduce((acc, node) => acc + node.lat, 0);
-            const longitudesSum = nodes.reduce((acc, node) => acc + node.lng, 0);
-            return { latitude: latitudesSum / nodes.length, longitude: longitudesSum / nodes.length };
-        };
-
-        const getLatitudeLongitude = async (address) => {
-            const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=AIzaSyA_mmI-elWh_pASDm9bTxAzbP4jsqEMc_g`;
-
+        const retrieveRestaurantsAndBars = async (addresses) => {
             try {
-                const response = await fetch(geocodeUrl);
-                const data = await response.json();
-                if (data.status === 'OK') {
-                    const location = data.results[0].geometry.location;
-                    // console.log('Address:', address);
-                    // console.log('Latitude:', location.lat);
-                    // console.log('Longitude:', location.lng);
-                    return location;
-                } else {
-                    console.error('Geocoding failed:', data.status);
-                }
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        };
-
-        const findNearbyPlaces = async (center, type) => {
-            const radius = '500'; // Search within 500 meters
-            const placesUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${center.latitude},${center.longitude}&radius=${radius}&type=${type}&key=AIzaSyA_mmI-elWh_pASDm9bTxAzbP4jsqEMc_g`;
-            console.log('Searching for nearby places...');
-            console.log('Center:', center);
-            console.log('Type:', type);
-            try {
-                const response = await fetch(placesUrl);
+                const response = await fetch('https://yieukfvw9l.execute-api.us-west-2.amazonaws.com/default/getNearbyRestaurantsAndBars');
                 const data = await response.json();
                 // console.log(data);
                 if (data.status === 'OK') {
-                    return data.results;
+                    return { restaurants: data.restaurants, bars: data.bars };
                 } else {
                     console.error('Places search failed:', data.status);
                 }
@@ -102,51 +85,47 @@
                 console.error('Error:', err);
             }
         };
-        const retrieveRestaurantsAndBars = async (addresses) => {
-            // Geocode all addresses to get their coordinates
-            const coords = await Promise.all(addresses.map(address => getLatitudeLongitude(address)));
 
-            // Calculate the geographical center of all coordinates
-            const center = calculateGeographicalCenter(coords);
+        document.getElementById('add-address').addEventListener('click', function () {
+            var newInput = document.createElement('input');
+            newInput.type = 'text';
+            newInput.placeholder = 'Enter another address...';
+            document.getElementById('address-inputs').appendChild(newInput);
+        });
 
-            // Find nearby restaurants and bars
-            const restaurants = await findNearbyPlaces(center, 'restaurant');
-            const bars = await findNearbyPlaces(center, 'bar');
+        document.getElementById('find-places').addEventListener('click', async function () {
+            const inputs = document.querySelectorAll('#address-inputs input');
+            const addresses = Array.from(inputs).map(input => input.value);
+            const results = await retrieveRestaurantsAndBars(addresses);
 
-            return { restaurants, bars };
-        };
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h2>Results</h2>';
 
-       document.getElementById('add-address').addEventListener('click', function () {
-                var newInput = document.createElement('input');
-                newInput.type = 'text';
-                newInput.placeholder = 'Enter another address...';
-                document.getElementById('address-inputs').appendChild(newInput);
-            });
+            if (results.restaurants && results.restaurants.length > 0) {
+                resultsDiv.innerHTML += '<h3>Restaurants</h3><ul>';
+                results.restaurants.forEach(place => {
+                    resultsDiv.innerHTML += `<li>${place.name}</li>`;
+                });
+                resultsDiv.innerHTML += '</ul>';
+            }
 
-            document.getElementById('find-places').addEventListener('click', async function () {
-                const inputs = document.querySelectorAll('#address-inputs input');
-                const addresses = Array.from(inputs).map(input => input.value);
-                const results = await retrieveRestaurantsAndBars(addresses);
+            if (results.bars && results.bars.length > 0) {
+                resultsDiv.innerHTML += '<h3>Bars</h3><ul>';
+                results.bars.forEach(bar => {
+                    resultsDiv.innerHTML += `<li>${bar.name}</li>`;
+                });
+                resultsDiv.innerHTML += '</ul>';
+            }
 
-                const resultsDiv = document.getElementById('results');
-                resultsDiv.innerHTML = '<h2>Results</h2>';
-
-                if (results.restaurants && results.restaurants.length > 0) {
-                    resultsDiv.innerHTML += '<h3>Restaurants</h3><ul>';
-                    results.restaurants.forEach(place => {
-                        resultsDiv.innerHTML += `<li>${place.name}</li>`;
-                    });
-                    resultsDiv.innerHTML += '</ul>';
-                }
-
-                if (results.bars && results.bars.length > 0) {
-                    resultsDiv.innerHTML += '<h3>Bars</h3><ul>';
-                    results.bars.forEach(bar => {
-                        resultsDiv.innerHTML += `<li>${bar.name}</li>`;
-                    });
-                    resultsDiv.innerHTML += '</ul>';
-                }
-            });
-        </script>
+            if (results.bothBarsAndRestaurants && results.bothBarsAndRestaurants.length > 0) {
+                resultsDiv.innerHTML += '<h3>Bar and Restaurant</h3><ul>';
+                results.bothBarsAndRestaurants.forEach(bothBarsAndRestaurant => {
+                    resultsDiv.innerHTML += `<li>${bothBarsAndRestaurant.name}</li>`;
+                });
+                resultsDiv.innerHTML += '</ul>';
+            }
+        });
+    </script>
     </body>
+
 </html>
