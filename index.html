@@ -2,15 +2,19 @@
 <html>
 
     <head>
-        <title>🍽️ Where should we go hang?🍸?</title>
+        <title>🍽️ Where should we go hang?🍸</title>
         <style>
         body {
             font-family: 'Courier New', Courier, monospace;
             background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
             background-size: 400% 400%;
             animation: gradient 15s ease infinite;
-            height: 100vh;
+            min-height: 100vh;
+            margin: 0; /* Remove default margin */
             color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             text-align: center;
         }
 
@@ -28,25 +32,24 @@
             }
         }
 
-        input[type="text"] {
-            margin: 10px 10px;
-            padding: 10px;
-            font-size: 16px;
+        .container {
+            width: 100%;
+            max-width: 720px; /* Max width for larger screens, you can adjust this as needed */
         }
 
-        container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        input[type="text"], button {
+            max-width: 300px; /* Set a max-width for inputs and buttons */
+            width: 100%; /* Make inputs and buttons take the full width of their parent */
+            padding: 10px;
+            margin: 10px auto; /* Center them horizontally */
+            font-size: 16px;
+            display: block; /* Make inputs and buttons block elements */
         }
 
         button {
             background-color: #ff4757;
             color: #fff;
             border: none;
-            padding: 10px 20px;
-            margin: 10px;
             cursor: pointer;
             font-size: 16px;
         }
